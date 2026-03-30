@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>6个月减脂追踪 Tracker v3</title>
+  <style>
+    :root{
+      --bg:#f7f7fb; --card:#ffffff; --text:#1f2937; --muted:#6b7280;
+      --line:#e5e7eb; --accent:#2563eb; --ok:#16a34a; --warn:#d97706;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{max-width:1250px;margin:24px auto;padding:0 16px}
+    .hero{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+    h1{font-size:28px;margin:0}
+    h2{font-size:20px}
+    .sub{color:var(--muted);margin-top:6px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 20px rgba(0,0,0,.04);padding:16px}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+    .span-12{grid-column:span 12}
+    .span-8{grid-column:span 8}
+    .span-4{grid-column:span 4}
+    .span-6{grid-column:span 6}
+    .span-3{grid-column:span 3}
+    @media (max-width:900px){.span-8,.span-4,.span-6,.span-3{grid-column:span 12}}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input,select,textarea,button{
+      width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;
+      font:inherit;background:white
+    }
+    textarea{min-height:84px;resize:vertical}
+    button{cursor:pointer;background:var(--accent);color:white;border:none;font-weight:600}
+    button.secondary{background:white;color:var(--text);border:1px solid var(--line)}
+    button.warn{background:var(--warn)}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    .actions button{width:auto}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    @media (max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}}
+    .stat{padding:14px;border:1px solid var(--line);border-radius:16px;background:#fcfcff}
+    .stat .k{font-size:12px;color:var(--muted)}
+    .stat .v{font-size:24px;font-weight:700;margin-top:4px}
+    .hint{font-size:12px;color:var(--muted)}
+    .good{color:var(--ok);font-weight:600}
+    .muted{color:var(--muted)}
+    .guide{line-height:1.75}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+    th{font-size:12px;color:var(--muted);position:sticky;top:0;background:var(--card)}
+    .table-wrap{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:14px}
+    canvas{max-width:100%;height:320px;background:white;border:1px solid var(--line);border-radius:14px}
+    .tiny{font-size:11px;color:var(--muted);margin-top:4px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <h1>6个月减脂追踪 Tracker</h1>
+        <div class="sub">现在带 lb / kg 自动换算，也加了每月可行目标。终于不用脑内做单位体操了。</div>
+      </div>
+      <div class="actions">
+        <button class="secondary" id="seedBtn">填充未来180天日期</button>
+        <button class="secondary" id="exportBtn">导出JSON</button>
+        <button class="secondary" id="importBtn">导入JSON</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" />
+        <button class="warn" id="clearBtn">清空数据</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card span-8">
+        <h2 style="margin-top:0">新增 / 修改当天记录</h2>
+        <div class="grid">
+          <div class="span-3">
+            <label>日期</label>
+            <input type="date" id="date" />
+          </div>
+          <div class="span-3">
+            <label>体重（lb / 磅）</label>
+            <input type="number" step="0.1" id="weightLb" placeholder="例如 170.8" />
+            <div class="tiny">输入 lb 会自动换算 kg</div>
+          </div>
+          <div class="span-3">
+            <label>体重（kg / 公斤）</label>
+            <input type="number" step="0.1" id="weightKg" placeholder="例如 77.5" />
+            <div class="tiny">输入 kg 会自动换算 lb</div>
+          </div>
+          <div class="span-3">
+            <label>体重（斤）</label>
+            <input type="number" step="0.1" id="weightJin" placeholder="例如 155" />
+            <div class="tiny">输入斤会自动换算 kg / lb</div>
+          </div>
+
+          <div class="span-3">
+            <label>睡眠（小时）</label>
+            <input type="number" step="0.1" id="sleepHours" placeholder="例如 7.5" />
+          </div>
+          <div class="span-3">
+            <label>步数 / 活动量</label>
+            <input type="number" id="steps" placeholder="例如 6500" />
+          </div>
+          <div class="span-3">
+            <label>吃了几餐</label>
+            <input type="number" id="mealsCount" placeholder="例如 3" />
+          </div>
+          <div class="span-3">
+            <label>有零食 / 额外进食</label>
+            <select id="snacks">
+              <option value="">请选择</option>
+              <option>无</option>
+              <option>有一点</option>
+              <option>明显有</option>
+            </select>
+          </div>
+
+          <div class="span-3">
+            <label>蛋白质</label>
+            <select id="protein">
+              <option value="">请选择</option>
+              <option>好</option>
+              <option>一般</option>
+              <option>偏低</option>
+            </select>
+          </div>
+          <div class="span-3">
+            <label>碳水控制</label>
+            <select id="carbs">
+              <option value="">请选择</option>
+              <option>好</option>
+              <option>一般</option>
+              <option>偏多</option>
+            </select>
+          </div>
+          <div class="span-3">
+            <label>饭后活动（分钟）</label>
+            <input type="number" id="postMealActivity" placeholder="例如 25" />
+          </div>
+          <div class="span-3">
+            <label>力量训练</label>
+            <select id="strength">
+              <option value="">请选择</option>
+              <option>无</option>
+              <option>有</option>
+            </select>
+          </div>
+
+          <div class="span-3">
+            <label>饥饿感（1-5）</label>
+            <input type="number" min="1" max="5" id="hunger" placeholder="1-5" />
+          </div>
+          <div class="span-3">
+            <label>压力 / 情绪（1-5）</label>
+            <input type="number" min="1" max="5" id="stress" placeholder="1-5" />
+          </div>
+          <div class="span-6">
+            <label>备注</label>
+            <textarea id="notes" placeholder="例如：晚饭后拖地20分钟；下午压力大，但没吃甜的；今天睡得一般。"></textarea>
+          </div>
+
+          <div class="span-12 actions">
+            <button id="saveBtn">保存当天记录</button>
+            <button class="secondary" id="todayBtn">跳到今天</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card span-4">
+        <h2 style="margin-top:0">本周仪表盘</h2>
+        <div class="stats">
+          <div class="stat"><div class="k">本周平均体重</div><div class="v" id="avgWeight">-</div></div>
+          <div class="stat"><div class="k">与上周相比</div><div class="v" id="weightDelta">-</div></div>
+          <div class="stat"><div class="k">饭后活动天数</div><div class="v" id="activeDays">-</div></div>
+          <div class="stat"><div class="k">力量训练次数</div><div class="v" id="strengthCount">-</div></div>
+        </div>
+        <p class="hint" style="margin-top:14px">看周均，不要被单日体重吓出文学情绪。体重每天都在玩水分戏法。</p>
+      </div>
+
+      <div class="card span-12">
+        <h2 style="margin-top:0">6个月参考目标</h2>
+        <div class="guide">
+          <div><b>第1个月：</b>适应期，目标减 <b>2 到 4 磅</b>。重点是稳定记录、减少零食、饭后活动。</div>
+          <div><b>第2个月：</b>开始下降，目标减 <b>3 到 5 磅</b>。继续控碳水质量，保证蛋白质。</div>
+          <div><b>第3个月：</b>稳定推进，目标减 <b>3 到 5 磅</b>。力量训练开始更关键。</div>
+          <div><b>第4个月：</b>继续下降，目标减 <b>2 到 4 磅</b>。允许慢一点，但别中断。</div>
+          <div><b>第5个月：</b>减速但稳，目标减 <b>2 到 3 磅</b>。看周均体重和腰围，不必求快。</div>
+          <div><b>第6个月：</b>收尾与稳定，目标减 <b>1 到 3 磅</b>。重点是别反弹，保持习惯。</div>
+          <div style="margin-top:8px"><b>总计可行目标：</b><span class="good">13 到 24 磅</span>。你要的是能持续，不是三周后把自己烦死。</div>
+        </div>
+      </div>
+
+      <div class="card span-12">
+        <h2 style="margin-top:0">体重趋势</h2>
+        <canvas id="chart" width="1100" height="320"></canvas>
+      </div>
+
+      <div class="card span-12">
+        <h2 style="margin-top:0">记录列表</h2>
+        <div class="table-wrap">
+          <table id="recordsTable">
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>lb</th>
+                <th>kg</th>
+                <th>斤</th>
+                <th>睡眠</th>
+                <th>步数</th>
+                <th>餐数</th>
+                <th>零食</th>
+                <th>蛋白</th>
+                <th>碳水</th>
+                <th>饭后活动</th>
+                <th>力量</th>
+                <th>饥饿</th>
+                <th>压力</th>
+                <th>备注</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const STORAGE_KEY = "fat_loss_tracker_6m_v3";
+function getData(){ return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+function setData(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+function todayStr(){
+  const d = new Date(); const m = String(d.getMonth()+1).padStart(2,"0"); const day = String(d.getDate()).padStart(2,"0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+function round1(n){ return Math.round(n*10)/10; }
+function lbToKg(lb){ return round1(lb * 0.45359237); }
+function kgToLb(kg){ return round1(kg / 0.45359237); }
+function jinToKg(jin){ return round1(jin * 0.5); }
+function kgToJin(kg){ return round1(kg * 2); }
+function startOfWeek(dateStr){
+  const d = new Date(dateStr + "T00:00:00"); const day = d.getDay(); const diff = (day === 0 ? -6 : 1 - day); d.setDate(d.getDate() + diff); return d;
+}
+function average(arr){ if(!arr.length) return null; return arr.reduce((a,b)=>a+b,0)/arr.length; }
+function fmt(n, digits=1){ return (n===null || n===undefined || Number.isNaN(n)) ? "-" : Number(n).toFixed(digits); }
+function val(id){ return document.getElementById(id).value.trim(); }
+function valNum(id){ const raw = document.getElementById(id).value; return raw === "" ? null : Number(raw); }
+
+let syncing = false;
+function syncFrom(source){
+  if(syncing) return;
+  syncing = true;
+  const lbEl = document.getElementById("weightLb");
+  const kgEl = document.getElementById("weightKg");
+  const jinEl = document.getElementById("weightJin");
+  const lb = valNum("weightLb"), kg = valNum("weightKg"), jin = valNum("weightJin");
+
+  if(source === "lb" && lb != null){
+    const kgV = lbToKg(lb), jinV = kgToJin(kgV);
+    kgEl.value = kgV; jinEl.value = jinV;
+  } else if(source === "kg" && kg != null){
+    const lbV = kgToLb(kg), jinV = kgToJin(kg);
+    lbEl.value = lbV; jinEl.value = jinV;
+  } else if(source === "jin" && jin != null){
+    const kgV = jinToKg(jin), lbV = kgToLb(kgV);
+    kgEl.value = kgV; lbEl.value = lbV;
+  }
+  syncing = false;
+}
+["weightLb","weightKg","weightJin"].forEach(id => {
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById(id).addEventListener("input", () => syncFrom(id.replace("weight","").toLowerCase()));
+  });
+});
+
+function readForm(){
+  return {
+    date: val("date"),
+    weightLb: valNum("weightLb"),
+    weightKg: valNum("weightKg"),
+    weightJin: valNum("weightJin"),
+    sleepHours: valNum("sleepHours"),
+    steps: valNum("steps"),
+    mealsCount: valNum("mealsCount"),
+    snacks: val("snacks"),
+    protein: val("protein"),
+    carbs: val("carbs"),
+    postMealActivity: valNum("postMealActivity"),
+    strength: val("strength"),
+    hunger: valNum("hunger"),
+    stress: valNum("stress"),
+    notes: val("notes")
+  };
+}
+function fillForm(rec){
+  const keys = ["date","weightLb","weightKg","weightJin","sleepHours","steps","mealsCount","snacks","protein","carbs","postMealActivity","strength","hunger","stress","notes"];
+  keys.forEach(k => { document.getElementById(k).value = rec?.[k] ?? ""; });
+}
+function saveRecord(){
+  const rec = readForm();
+  if(!rec.date){ alert("先选日期。"); return; }
+  const data = getData();
+  const idx = data.findIndex(x => x.date === rec.date);
+  if(idx >= 0) data[idx] = rec; else data.push(rec);
+  data.sort((a,b) => a.date.localeCompare(b.date));
+  setData(data);
+  renderAll();
+}
+function deleteRecord(date){
+  setData(getData().filter(x => x.date !== date));
+  renderAll();
+}
+function editRecord(date){
+  const rec = getData().find(x => x.date === date);
+  if(rec) fillForm(rec);
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+function renderTable(){
+  const tbody = document.querySelector("#recordsTable tbody");
+  const data = getData().slice().sort((a,b) => b.date.localeCompare(a.date));
+  tbody.innerHTML = data.map(r => `
+    <tr>
+      <td>${r.date}</td>
+      <td>${r.weightLb ?? ""}</td>
+      <td>${r.weightKg ?? ""}</td>
+      <td>${r.weightJin ?? ""}</td>
+      <td>${r.sleepHours ?? ""}</td>
+      <td>${r.steps ?? ""}</td>
+      <td>${r.mealsCount ?? ""}</td>
+      <td>${r.snacks ?? ""}</td>
+      <td>${r.protein ?? ""}</td>
+      <td>${r.carbs ?? ""}</td>
+      <td>${r.postMealActivity ?? ""}</td>
+      <td>${r.strength ?? ""}</td>
+      <td>${r.hunger ?? ""}</td>
+      <td>${r.stress ?? ""}</td>
+      <td>${(r.notes || "").replace(/</g,"&lt;")}</td>
+      <td><div class="actions"><button class="secondary" onclick="editRecord('${r.date}')">编辑</button><button class="warn" onclick="deleteRecord('${r.date}')">删除</button></div></td>
+    </tr>`).join("");
+}
+function getWeekStats(){
+  const data = getData();
+  if(!data.length) return {avg:null, delta:null, activeDays:0, strengthCount:0};
+  const baseDate = document.getElementById("date").value || todayStr();
+  const sow = startOfWeek(baseDate); const eow = new Date(sow); eow.setDate(eow.getDate()+6);
+  const prevStart = new Date(sow); prevStart.setDate(prevStart.getDate()-7);
+  const prevEnd = new Date(eow); prevEnd.setDate(prevEnd.getDate()-7);
+
+  const inRange = (r, a, b) => { const d = new Date(r.date + "T00:00:00"); return d >= a && d <= b; };
+  const thisWeek = data.filter(r => inRange(r, sow, eow));
+  const prevWeek = data.filter(r => inRange(r, prevStart, prevEnd));
+
+  const avgKg = average(thisWeek.map(r => r.weightKg).filter(v => typeof v === "number"));
+  const prevAvgKg = average(prevWeek.map(r => r.weightKg).filter(v => typeof v === "number"));
+  const deltaKg = (avgKg != null && prevAvgKg != null) ? (avgKg - prevAvgKg) : null;
+
+  return {
+    avgKg,
+    avgLb: avgKg != null ? kgToLb(avgKg) : null,
+    deltaKg,
+    deltaLb: deltaKg != null ? kgToLb(Math.abs(deltaKg)) * Math.sign(deltaKg) : null,
+    activeDays: thisWeek.filter(r => (r.postMealActivity || 0) >= 15).length,
+    strengthCount: thisWeek.filter(r => r.strength === "有").length
+  };
+}
+function renderStats(){
+  const s = getWeekStats();
+  document.getElementById("avgWeight").textContent = s.avgKg == null ? "-" : `${fmt(s.avgKg)} kg / ${fmt(s.avgLb)} lb`;
+  document.getElementById("weightDelta").innerHTML = s.deltaKg == null ? "-" : `<span class="${s.deltaKg <= 0 ? 'good' : ''}">${s.deltaKg > 0 ? "+" : ""}${fmt(s.deltaKg)} kg</span>`;
+  document.getElementById("activeDays").textContent = s.activeDays;
+  document.getElementById("strengthCount").textContent = s.strengthCount;
+}
+function renderChart(){
+  const canvas = document.getElementById("chart");
+  const ctx = canvas.getContext("2d");
+  const data = getData().filter(r => typeof r.weightKg === "number").sort((a,b)=>a.date.localeCompare(b.date));
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H); ctx.fillStyle = "#fff"; ctx.fillRect(0,0,W,H);
+  const m = {top:20,right:20,bottom:40,left:50}, plotW = W-m.left-m.right, plotH = H-m.top-m.bottom;
+
+  ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+  for(let i=0;i<=4;i++){ const y = m.top + (plotH/4)*i; ctx.beginPath(); ctx.moveTo(m.left,y); ctx.lineTo(W-m.right,y); ctx.stroke(); }
+
+  if(data.length < 2){
+    ctx.fillStyle = "#6b7280"; ctx.font = "14px sans-serif"; ctx.fillText("先录入至少2条体重记录，图才肯说人话。", m.left, H/2); return;
+  }
+
+  const vals = data.map(d => d.weightKg); let minV = Math.min(...vals), maxV = Math.max(...vals);
+  if(minV === maxV){ minV -= 1; maxV += 1; }
+  const pad = Math.max(1, (maxV-minV)*0.1); minV -= pad; maxV += pad;
+  const x = i => m.left + (plotW*(i/(data.length-1)));
+  const y = v => m.top + plotH - ((v-minV)/(maxV-minV))*plotH;
+
+  ctx.strokeStyle = "#2563eb"; ctx.lineWidth = 2.5; ctx.beginPath();
+  data.forEach((d,i) => { if(i===0) ctx.moveTo(x(i), y(d.weightKg)); else ctx.lineTo(x(i), y(d.weightKg)); });
+  ctx.stroke();
+  ctx.fillStyle = "#2563eb";
+  data.forEach((d,i) => { ctx.beginPath(); ctx.arc(x(i), y(d.weightKg), 3, 0, Math.PI*2); ctx.fill(); });
+
+  ctx.fillStyle = "#6b7280"; ctx.font = "12px sans-serif";
+  for(let i=0;i<=4;i++){ const value = maxV - ((maxV-minV)/4)*i; const yy = m.top + (plotH/4)*i + 4; ctx.fillText(value.toFixed(1), 8, yy); }
+  const step = Math.ceil(data.length / 6);
+  for(let i=0;i<data.length;i+=step){ const xx = x(i); ctx.fillText(data[i].date.slice(5), xx-16, H-12); }
+}
+function renderAll(){ renderTable(); renderStats(); renderChart(); }
+function seedDates(){
+  const data = getData(), existing = new Set(data.map(d => d.date));
+  const start = new Date(document.getElementById("date").value || todayStr());
+  for(let i=0;i<180;i++){ const d = new Date(start); d.setDate(d.getDate()+i); const ds = d.toISOString().slice(0,10); if(!existing.has(ds)) data.push({date:ds}); }
+  data.sort((a,b)=>a.date.localeCompare(b.date)); setData(data); renderAll();
+}
+function exportJson(){
+  const blob = new Blob([JSON.stringify(getData(), null, 2)], {type:"application/json"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "6个月减脂追踪数据.json"; a.click(); URL.revokeObjectURL(a.href);
+}
+function importJson(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{ const data = JSON.parse(reader.result); if(!Array.isArray(data)) throw new Error("bad"); setData(data); renderAll(); alert("导入成功。"); }
+    catch(e){ alert("导入失败，文件格式不对。"); }
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById("saveBtn").onclick = saveRecord;
+document.getElementById("todayBtn").onclick = () => fillForm({date: todayStr()});
+document.getElementById("date").onchange = renderStats;
+document.getElementById("seedBtn").onclick = seedDates;
+document.getElementById("exportBtn").onclick = exportJson;
+document.getElementById("importBtn").onclick = () => document.getElementById("importFile").click();
+document.getElementById("importFile").onchange = (e) => e.target.files[0] && importJson(e.target.files[0]);
+document.getElementById("clearBtn").onclick = () => {
+  if(confirm("确定清空所有本地数据？这个操作没法撤回。")){ localStorage.removeItem(STORAGE_KEY); renderAll(); fillForm({date: todayStr()}); }
+};
+
+fillForm({date: todayStr()});
+renderAll();
+</script>
+</body>
+</html>
